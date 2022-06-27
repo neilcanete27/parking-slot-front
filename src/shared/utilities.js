@@ -28,15 +28,10 @@ export const getAvailableSizes = (slots, size) => {
   return slots.filter((slot) => slot.size >= size && slot.isOccupied === false);
 };
 
-export const getParkingFee = (size) => {
-  switch (size) {
-    case 0:
-      return 20;
-    case 1:
-      return 60;
-    case 2:
-      return 100;
-  }
+export const parkingFeeDict = {
+  0: 20,
+  1: 60,
+  2: 100,
 };
 
 export const isReturnee = (vehicle) => {

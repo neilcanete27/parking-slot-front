@@ -5,29 +5,29 @@ import {
   calculateFee,
   getAvailableSizes,
   getNearest,
-  getParkingFee,
   getRank,
   getSizeText,
   hasRecord,
+  parkingFeeDict,
 } from "../../shared/utilities";
-import axios from "axios";
+import { addVehicle, getVehicles, updateVehicle } from "../../api/vehicles";
+import { addSlot, getSlots, updateSlot } from "../../api/slots";
+import { addEntryPoint, getSettings } from "../../api/settings";
 
 function ParkingLot() {
+  // INITIAL GET
   useEffect(() => {
-    axios
-      .get(`${process.env.REACT_APP_API}/vehicles`)
+    getVehicles()
       .then((result) => setVehicles(result.data.data))
       .catch((err) => console.log(err));
   }, []);
   useEffect(() => {
-    axios
-      .get(`${process.env.REACT_APP_API}/slots`)
+    getSlots()
       .then((result) => setSlots(result.data.data))
       .catch((err) => console.log(err));
   }, []);
   useEffect(() => {
-    axios
-      .get(`${process.env.REACT_APP_API}/settings`)
+    getSettings()
       .then((result) => setSettings(result.data.data))
       .catch((err) => console.log(err));
   }, []);
@@ -58,50 +58,44 @@ function ParkingLot() {
   };
 
   const handleSubmitSlot = () => {
-    axios
-      .patch(`${process.env.REACT_APP_API}/slots/${selectedSlot.id}`, {
-        distance: selectedSlot.distance,
-      })
-      .then((res) => {
+    updateSlot(selectedSlot.id, { distance: selectedSlot.distance }).then(
+      (res) => {
         setSelectedSlot(null);
         window.location.reload();
-      });
+      }
+    );
   };
 
   const updateSlots = (id) => {
-    axios
-      .patch(`${process.env.REACT_APP_API}/slots/${id}`, {
-        isOccupied: true,
-        vehicle: plate,
-      })
-      .then((res) => {
-        window.location.reload();
-      });
+    updateSlot(id, {
+      isOccupied: true,
+      vehicle: plate,
+    }).then((res) => {
+      window.location.reload();
+    });
   };
 
   const addEntryPoints = () => {
-    axios
-      .patch(`${process.env.REACT_APP_API}/settings/${settings.id}`, {
-        points: settings.points + 1,
-      })
-      .then((res) => {
-        alert("Successfully added new entry points!");
-        window.location.reload();
-      });
+    addEntryPoint(settings.id, {
+      points: settings.points + 1,
+    }).then((res) => {
+      alert("Successfully added new entry points!");
+      window.location.reload();
+    });
   };
 
   const updateVehicles = async (id, fee) => {
     const record = hasRecord(vehicles, plate) || null;
     if (record) {
       console.log("naay record");
-      await axios.patch(`${process.env.REACT_APP_API}/vehicles/${record.id}`, {
+      await updateVehicle(record.id, {
         parkingSlot: id,
         parkingFee: fee,
         status: "parking",
         parkIn: new Date(),
       });
     } else {
-      await axios.post(`${process.env.REACT_APP_API}/vehicles`, {
+      await addVehicle({
         parkingSlot: id,
         parkingFee: fee,
         status: "parking",
@@ -122,7 +116,7 @@ function ParkingLot() {
     if (size === 0) {
       const nearest = getNearest(slots, entryPoint);
       slotId = nearest.id;
-      parkingFee = getParkingFee(nearest.size);
+      parkingFee = parkingFeeDict[nearest.size];
     } else {
       const result = getAvailableSizes(slots, size);
       console.log("result: ", result);
@@ -132,7 +126,7 @@ function ParkingLot() {
       }
       const nearest = getNearest(result, entryPoint);
       slotId = nearest.id;
-      parkingFee = getParkingFee(nearest.size);
+      parkingFee = parkingFeeDict[nearest.size];
     }
     updateSlots(slotId);
     updateVehicles(slotId, parkingFee);
@@ -167,14 +161,15 @@ function ParkingLot() {
         </div>
       ),
       onOk: async () => {
-        await axios.patch(
-          `${process.env.REACT_APP_API}/slots/${selectedVehicle.parkingSlot}`,
-          { isOccupied: false, vehicle: null }
-        );
-        await axios.patch(
-          `${process.env.REACT_APP_API}/vehicles/${selectedVehicle.id}`,
-          { lastParkOut: new Date(), parkIn: null, status: "away" }
-        );
+        await updateSlot(selectedVehicle.parkingSlot, {
+          isOccupied: false,
+          vehicle: null,
+        });
+        await updateVehicle(selectedVehicle.id, {
+          lastParkOut: new Date(),
+          parkIn: null,
+          status: "away",
+        });
         window.location.reload();
       },
     });
@@ -194,7 +189,7 @@ function ParkingLot() {
   };
 
   const handleAddSlot = async () => {
-    await axios.post(`${process.env.REACT_APP_API}/slots`, {
+    await addSlot({
       distance: distance,
       size: slotSize,
       isOccupied: false,
