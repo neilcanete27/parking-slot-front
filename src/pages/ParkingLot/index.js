@@ -204,12 +204,20 @@ function ParkingLot() {
     window.location.reload();
   };
 
+  const handlePark = () => {
+    if (slots.some((slot) => slot.isOccupied === false)) {
+      setModalShow(true);
+    } else {
+      alert("No parking slot available");
+    }
+  };
+
   return (
     <div>
       <div className="flex gap-2 justify-center">
         <button
           className="bg-blue-500 text-white px-10 py-2 rounded-sm"
-          onClick={() => setModalShow(true)}
+          onClick={handlePark}
         >
           Park Vehicle
         </button>
