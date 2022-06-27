@@ -1,12 +1,15 @@
 export const getNearest = (slots, entry) => {
   return slots
     .filter((slot) => slot.isOccupied === false)
+    .filter((slot) => slot.distance[entry] !== undefined)
     .sort((a, b) => a.distance[entry] - b.distance[entry])[0];
 };
 
 export const getRank = (slots, entry, id) => {
+  console.log(slots[0].distance[3]);
   return slots
     .filter((slot) => slot.isOccupied === false)
+    .filter((slot) => slot.distance[entry] !== undefined)
     .sort((a, b) => a.distance[entry] - b.distance[entry])
     .findIndex((slot) => slot.id === id);
 };
@@ -68,7 +71,12 @@ export const calculateFee = (vehicle) => {
   const returnee = isReturnee(vehicle);
 
   if (returnee) {
-    fee += hours * vehicle.parkingFee;
+    const timeLeft = 3 - vehicle.timeConsumed.hours;
+    if (timeLeft > 0) {
+      if (hours > timeLeft) fee += (hours - timeLeft) * vehicle.parkingFee;
+    } else {
+      fee += hours * vehicle.parkingFee;
+    }
   } else {
     fee += 40;
     if (days > 0) {
@@ -78,12 +86,7 @@ export const calculateFee = (vehicle) => {
       fee += (hours - 3) * vehicle.parkingFee;
     }
   }
-
-  console.log("DAYS: ", days);
-  console.log("HOURS: ", hours);
-  console.log("MINUTES: ", minutes);
-  //   return fee;
-  return { returnee, days, hours, minutes, fee };
+  return { returnee, days, hours, minutes, seconds, fee };
 };
 
 export const hasRecord = (vehicles, plate) => {

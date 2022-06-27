@@ -87,7 +87,6 @@ function ParkingLot() {
   const updateVehicles = async (id, fee) => {
     const record = hasRecord(vehicles, plate) || null;
     if (record) {
-      console.log("naay record");
       await updateVehicle(record.id, {
         parkingSlot: id,
         parkingFee: fee,
@@ -115,16 +114,23 @@ function ParkingLot() {
     var parkingFee = 0;
     if (size === 0) {
       const nearest = getNearest(slots, entryPoint);
+      if (nearest === undefined) {
+        alert("No parking slot available");
+        return;
+      }
       slotId = nearest.id;
       parkingFee = parkingFeeDict[nearest.size];
     } else {
       const result = getAvailableSizes(slots, size);
-      console.log("result: ", result);
       if (result.length < 1) {
         alert("No parking slot available");
         return;
       }
       const nearest = getNearest(result, entryPoint);
+      if (nearest === undefined) {
+        alert("No parking slot available");
+        return;
+      }
       slotId = nearest.id;
       parkingFee = parkingFeeDict[nearest.size];
     }
@@ -142,7 +148,7 @@ function ParkingLot() {
 
   const handleUnpark = () => {
     setUnparkModal(false);
-    const { returnee, days, hours, minutes, fee } =
+    const { returnee, days, hours, minutes, seconds, fee } =
       calculateFee(selectedVehicle);
     Modal.confirm({
       title: "Confirm",
@@ -169,6 +175,7 @@ function ParkingLot() {
           lastParkOut: new Date(),
           parkIn: null,
           status: "away",
+          timeConsumed: { hours, minutes, seconds },
         });
         window.location.reload();
       },
@@ -184,7 +191,6 @@ function ParkingLot() {
   const handleAddDistanceChange = (value, index) => {
     var newDistance = distance;
     newDistance[index] = parseInt(value);
-    console.log("new distance: ", newDistance);
     setDistance(newDistance);
   };
 
